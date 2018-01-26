@@ -43,7 +43,7 @@ class RsaFaceDetector{
 		std::string rsa_net_weight = RSA_NET_WEIGHT;
 		std::string lrn_net_def = LRN_NET_DEF;
 		std::string lrn_net_weight = LRN_NET_WEIGHT;
-		int gpu_id_ = 0;
+		int gpu_id_;
 		std::vector<std::shared_ptr<caffe::Blob<float> > > trans_featmaps;
 		caffe::Blob<float> * sfn_net_output;
 		caffe::Blob<float> * input_layer;

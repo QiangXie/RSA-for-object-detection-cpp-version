@@ -342,7 +342,7 @@ void RsaFaceDetector::lrnProcess(std::vector<Face> &faces_out){
 		boxes[i*5+4] = faces[i].score;
 	}
 	int num_out;
-	_nms(keep, &num_out, boxes, faces.size(), 5, NMS_THRESH, GPU_ID);
+	_nms(keep, &num_out, boxes, faces.size(), 5, NMS_THRESH, this->gpu_id_);
 	for(int i = 0; i < num_out; ++i){
 		faces_out.push_back(faces[*(keep+i)]);
 	}
