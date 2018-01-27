@@ -1,4 +1,6 @@
 #include "rsa_face_detection.hpp"
+#include <chrono>
+using milli = std::chrono::milliseconds;
 
 using namespace caffe;
 
@@ -147,8 +149,7 @@ void getTripPoints(std::vector<cv::Point2f> &dst_rect, cv::Point2f src_key_point
 	}
 }
 
-RsaFaceDetector::RsaFaceDetector(int gpu_id){
-	this->gpu_id_ = gpu_id;
+RsaFaceDetector::RsaFaceDetector(int gpu_id): gpu_id_(gpu_id){
 	Caffe::set_mode(Caffe::GPU);
 	Caffe::SetDevice(this->gpu_id_);
 
@@ -224,11 +225,10 @@ void RsaFaceDetector::sfnProcess(const cv::Mat & img){
 }
 
 void RsaFaceDetector::rsaProcess(void){
-	trans_featmaps.clear();
 	std::shared_ptr<Blob<float> > trans_featmap_ori(new Blob<float>);
 	trans_featmap_ori->CopyFrom(*(this->sfn_net_output), false, true);
 
-	trans_featmaps.push_back(trans_featmap_ori);
+	this->trans_featmaps.push_back(trans_featmap_ori);
 	int diffcnt;
 
 	std::shared_ptr<Blob<float> > trans_featmap(new Blob<float>);
@@ -242,8 +242,8 @@ void RsaFaceDetector::rsaProcess(void){
 			rsa_net->Forward();
 			in_featmap->CopyFrom(*rsa_net->output_blobs()[0], false, true);
 		}
-		trans_featmaps.push_back(std::shared_ptr<Blob<float> >(new Blob<float>));
-		trans_featmaps[trans_featmaps.size() - 1]->CopyFrom(*rsa_net->output_blobs()[0], false, true);
+		this->trans_featmaps.push_back(std::shared_ptr<Blob<float> >(new Blob<float>));
+		this->trans_featmaps[trans_featmaps.size() - 1]->CopyFrom(*rsa_net->output_blobs()[0], false, true);
 	}
 
 }
@@ -321,6 +321,7 @@ void RsaFaceDetector::lrnProcess(std::vector<Face> &faces_out){
 			pts_all.push_back(pts_out[j]);
 		}
 	}
+	this->trans_featmaps.clear();
 
 	float *boxes = new float[pts_all.size()*5];
 	int *keep = new int[pts_all.size()*5];
@@ -351,10 +352,19 @@ void RsaFaceDetector::lrnProcess(std::vector<Face> &faces_out){
 }
 
 std::vector<Face> RsaFaceDetector::detect(cv::Mat image){
+	auto start_sfn = std::chrono::high_resolution_clock::now();
 	this->sfnProcess(image);
+	auto end_sfn = std::chrono::high_resolution_clock::now();
+	auto start_rsa = std::chrono::high_resolution_clock::now();
 	this->rsaProcess();
+	auto end_rsa = std::chrono::high_resolution_clock::now();
 	std::vector<Face> out;
+	auto start_lrn = std::chrono::high_resolution_clock::now();
 	lrnProcess(out);
+	auto end_lrn = std::chrono::high_resolution_clock::now();
 
+	std::cout << "sfn took " << std::chrono::duration_cast<milli>(end_sfn - start_sfn).count() << " ms\n";
+	std::cout << "rsa took " << std::chrono::duration_cast<milli>(end_rsa - start_rsa).count() << " ms\n";
+	std::cout << "lrn took " << std::chrono::duration_cast<milli>(end_lrn - start_lrn).count() << " ms\n";
 	return out;
 }

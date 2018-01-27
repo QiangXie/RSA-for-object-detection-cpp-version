@@ -34,9 +34,6 @@ class RsaFaceDetector{
 		void rsaProcess(void);
 		void lrnProcess(std::vector<Face> &faces_out);
 	private:
-		std::shared_ptr<caffe::Net<float> > sfn_net;
-		std::shared_ptr<caffe::Net<float> > rsa_net;
-		std::shared_ptr<caffe::Net<float> > lrn_net;
 		std::string sfn_net_def = SFN_NET_DEF;
 		std::string sfn_net_weight = SFN_NET_WEIGHT;
 		std::string rsa_net_def = RSA_NET_DEF;
@@ -56,6 +53,9 @@ class RsaFaceDetector{
 		double stride;
 		double anchor_center;
 		std::vector<int> scale;
+		std::shared_ptr<caffe::Net<float> > sfn_net;
+		std::shared_ptr<caffe::Net<float> > rsa_net;
+		std::shared_ptr<caffe::Net<float> > lrn_net;
 };
 
 #endif
