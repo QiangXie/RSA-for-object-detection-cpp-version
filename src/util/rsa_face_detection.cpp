@@ -323,32 +323,34 @@ void RsaFaceDetector::lrnProcess(std::vector<Face> &faces_out){
 	}
 	this->trans_featmaps.clear();
 
-	float *boxes = new float[pts_all.size()*5];
-	int *keep = new int[pts_all.size()*5];
-	std::vector<Face> faces;
+	if(!pts_all.empty()){
+		float *boxes = new float[pts_all.size()*5];
+		int *keep = new int[pts_all.size()*5];
+		std::vector<Face> faces;
 
-	for(int i = 0; i < pts_all.size(); ++i){
-		Face face;
-		face.bbox = rects_all[i];
-		face.key_points = pts_all[i];
-		face.score = valid_score_all[i];
-		faces.push_back(face);
+		for(int i = 0; i < pts_all.size(); ++i){
+			Face face;
+			face.bbox = rects_all[i];
+			face.key_points = pts_all[i];
+			face.score = valid_score_all[i];
+			faces.push_back(face);
+		}
+		std::sort(faces.begin(), faces.end(), comp);
+		for(int i = 0; i < faces.size(); ++i){
+			boxes[i*5+0] = faces[i].bbox[0];
+			boxes[i*5+1] = faces[i].bbox[1];
+			boxes[i*5+2] = faces[i].bbox[2];
+			boxes[i*5+3] = faces[i].bbox[3];
+			boxes[i*5+4] = faces[i].score;
+		}
+		int num_out;
+		_nms(keep, &num_out, boxes, faces.size(), 5, NMS_THRESH, this->gpu_id_);
+		for(int i = 0; i < num_out; ++i){
+			faces_out.push_back(faces[*(keep+i)]);
+		}
+		delete [] boxes;
+		delete [] keep;
 	}
-	std::sort(faces.begin(), faces.end(), comp);
-	for(int i = 0; i < faces.size(); ++i){
-		boxes[i*5+0] = faces[i].bbox[0];
-		boxes[i*5+1] = faces[i].bbox[1];
-		boxes[i*5+2] = faces[i].bbox[2];
-		boxes[i*5+3] = faces[i].bbox[3];
-		boxes[i*5+4] = faces[i].score;
-	}
-	int num_out;
-	_nms(keep, &num_out, boxes, faces.size(), 5, NMS_THRESH, this->gpu_id_);
-	for(int i = 0; i < num_out; ++i){
-		faces_out.push_back(faces[*(keep+i)]);
-	}
-	delete [] boxes;
-	delete [] keep;
 }
 
 std::vector<Face> RsaFaceDetector::detect(cv::Mat image){
